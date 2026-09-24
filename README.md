@@ -13,7 +13,7 @@ The system features a **React.js + Vite** frontend rendered in a clean white/lig
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+python main.py
 ```
 
 - **API Base URL**: `http://localhost:8000`
@@ -144,7 +144,7 @@ The system evaluates 8 classification algorithms trained on 62,500 patient recor
 ## 🌐 Cloud Deployment Architecture
 
 - **Frontend (React)**: Deployed independently on **Vercel** or **Netlify**. Set environment variable `VITE_API_URL=https://your-fastapi-backend.onrender.com`.
-- **Backend (FastAPI)**: Deployed on **Render** or **Railway**. Configured with Uvicorn startup command: `uvicorn main:app --host 0.0.0.0 --port $PORT`.
+- **Backend (FastAPI)**: Deployed on **Render** or **Railway**. Configured with entrypoint command `python main.py` or Uvicorn startup command: `uvicorn main:app --host 0.0.0.0 --port $PORT`.
 
 ---
 
