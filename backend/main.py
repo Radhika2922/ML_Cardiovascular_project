@@ -394,5 +394,6 @@ def get_model_performance():
 
 
 if __name__ == "__main__":
-    print("Starting CardioPredict FastAPI server on http://127.0.0.1:8000 ...")
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8000))
+    print(f"Starting CardioPredict FastAPI server on 0.0.0.0:{port}...")
+    uvicorn.run(app, host="0.0.0.0", port=port)
