@@ -50,8 +50,13 @@ export const AssessmentPage = ({ onPredictionComplete }) => {
   // --------------------------------------------------------------------------
   // Dynamic Calculations & Health Indicators
   // --------------------------------------------------------------------------
-  const heightM = (formData.height || 0) / 100.0;
-  const bmiRaw = heightM > 0 && formData.weight > 0 ? formData.weight / (heightM * heightM) : 0;
+  const heightVal = parseFloat(formData.height) || 0;
+  const weightVal = parseFloat(formData.weight) || 0;
+  const apHiVal = parseFloat(formData.ap_hi) || 0;
+  const apLoVal = parseFloat(formData.ap_lo) || 0;
+
+  const heightM = heightVal / 100.0;
+  const bmiRaw = heightM > 0 && weightVal > 0 ? weightVal / (heightM * heightM) : 0;
   const calculatedBmi = bmiRaw.toFixed(1);
 
   const getBmiCategory = (val) => {
@@ -75,23 +80,35 @@ export const AssessmentPage = ({ onPredictionComplete }) => {
     return { label: 'Normal Blood Pressure', color: '#16A34A', bg: '#F0FDF4', tip: 'Optimal cardiovascular blood pressure reading.' };
   };
 
-  const bpCat = getBpCategory(formData.ap_hi, formData.ap_lo);
+  const bpCat = getBpCategory(apHiVal, apLoVal);
 
   // --------------------------------------------------------------------------
   // Event Handlers
   // --------------------------------------------------------------------------
   const handleChange = (e) => {
     const { name, value, type } = e.target;
+    let newValue = value;
+    if (type === 'number') {
+      if (value === '') {
+        newValue = '';
+      } else {
+        const clean = value.replace(/^0+(?=\d)/, '');
+        newValue = clean === '' ? '' : clean;
+      }
+    } else {
+      newValue = parseInt(value, 10);
+    }
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'number' ? parseFloat(value) || 0 : parseInt(value, 10)
+      [name]: newValue
     }));
     setErrorMessage('');
   };
 
   const updateNumericField = (field, delta, minVal, maxVal) => {
     setFormData((prev) => {
-      const current = prev[field] || 0;
+      const current = parseFloat(prev[field]) || 0;
       const updated = Math.min(maxVal, Math.max(minVal, current + delta));
       return { ...prev, [field]: updated };
     });
@@ -112,15 +129,21 @@ export const AssessmentPage = ({ onPredictionComplete }) => {
   // Validation
   // --------------------------------------------------------------------------
   const validateStep = (stepNumber) => {
+    const ageNum = parseFloat(formData.age) || 0;
+    const heightNum = parseFloat(formData.height) || 0;
+    const weightNum = parseFloat(formData.weight) || 0;
+    const apHiNum = parseFloat(formData.ap_hi) || 0;
+    const apLoNum = parseFloat(formData.ap_lo) || 0;
+
     if (stepNumber === 1 || formMode === 'full') {
-      if (formData.age < 18 || formData.age > 100) return 'Age must be between 18 and 100 years.';
-      if (formData.height < 50 || formData.height > 250) return 'Height must be between 50 and 250 cm.';
-      if (formData.weight < 20 || formData.weight > 300) return 'Weight must be between 20 and 300 kg.';
+      if (formData.age === '' || ageNum < 18 || ageNum > 100) return 'Age must be between 18 and 100 years.';
+      if (formData.height === '' || heightNum < 50 || heightNum > 250) return 'Height must be between 50 and 250 cm.';
+      if (formData.weight === '' || weightNum < 20 || weightNum > 300) return 'Weight must be between 20 and 300 kg.';
     }
     if (stepNumber === 2 || formMode === 'full') {
-      if (formData.ap_hi < 50 || formData.ap_hi > 260) return 'Systolic Blood Pressure must be between 50 and 260 mmHg.';
-      if (formData.ap_lo < 30 || formData.ap_lo > 180) return 'Diastolic Blood Pressure must be between 30 and 180 mmHg.';
-      if (formData.ap_hi <= formData.ap_lo) return 'Systolic Blood Pressure must be greater than Diastolic Blood Pressure.';
+      if (formData.ap_hi === '' || apHiNum < 50 || apHiNum > 260) return 'Systolic Blood Pressure must be between 50 and 260 mmHg.';
+      if (formData.ap_lo === '' || apLoNum < 30 || apLoNum > 180) return 'Diastolic Blood Pressure must be between 30 and 180 mmHg.';
+      if (apHiNum <= apLoNum) return 'Systolic Blood Pressure must be greater than Diastolic Blood Pressure.';
     }
     return null;
   };
@@ -161,13 +184,28 @@ export const AssessmentPage = ({ onPredictionComplete }) => {
     setLoading(true);
     setErrorMessage('');
 
+    const cleanPayload = {
+      ...formData,
+      age: parseFloat(formData.age) || 0,
+      gender: parseInt(formData.gender, 10),
+      height: parseFloat(formData.height) || 0,
+      weight: parseFloat(formData.weight) || 0,
+      ap_hi: parseFloat(formData.ap_hi) || 0,
+      ap_lo: parseFloat(formData.ap_lo) || 0,
+      cholesterol: parseInt(formData.cholesterol, 10),
+      gluc: parseInt(formData.gluc, 10),
+      smoke: parseInt(formData.smoke, 10),
+      alco: parseInt(formData.alco, 10),
+      active: parseInt(formData.active, 10),
+    };
+
     try {
-      const result = await predictRisk(formData);
+      const result = await predictRisk(cleanPayload);
       setLoading(false);
       if (onPredictionComplete) {
-        onPredictionComplete(result, formData);
+        onPredictionComplete(result, cleanPayload);
       }
-      navigate('/results', { state: { result, formData } });
+      navigate('/results', { state: { result, formData: cleanPayload } });
     } catch (err) {
       setLoading(false);
       setErrorMessage(err.message || 'Unable to connect to the prediction service. Please check network connection.');
@@ -345,8 +383,8 @@ export const AssessmentPage = ({ onPredictionComplete }) => {
                         checked={formData.gender === 1}
                         onChange={handleChange}
                       />
-                      <span className="radio-icon">👩</span>
-                      <span className="radio-text">Female</span>
+                      <span className="radio-icon">👨</span>
+                      <span className="radio-text">Male</span>
                     </label>
                     <label className={`card-radio-pill ${formData.gender === 2 ? 'selected' : ''}`}>
                       <input
@@ -356,8 +394,8 @@ export const AssessmentPage = ({ onPredictionComplete }) => {
                         checked={formData.gender === 2}
                         onChange={handleChange}
                       />
-                      <span className="radio-icon">👨</span>
-                      <span className="radio-text">Male</span>
+                      <span className="radio-icon">👩</span>
+                      <span className="radio-text">Female</span>
                     </label>
                   </div>
                 </div>
