@@ -818,7 +818,7 @@ export const AssessmentPage = ({ onPredictionComplete }) => {
                 <div className="submit-wrapper">
                   <PredictionButton
                     loading={loading}
-                    text="Calculate Cardiovascular Risk →"
+                    text="Predict Risk"
                     onClick={handleSubmit}
                   />
                 </div>
